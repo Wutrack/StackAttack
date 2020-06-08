@@ -39,7 +39,7 @@ void ARoom::InitRoom(int32 roomWidth)
 	}
 
 	//Start searching a free crane timer
-	GetWorld()->GetTimerManager().SetTimer(CraneSearchTHandle, this, &ARoom::SearchFreeCrane, 1.0f, true, 2.0f);
+	GetWorld()->GetTimerManager().SetTimer(CraneSearchTHandle, this, &ARoom::SearchFreeCraneAndSpawnItem, 1.0f, true, 2.0f);
 
 	//Start increase the level difficult timer
 	GetWorld()->GetTimerManager().SetTimer(DifficultHandle, this, &ARoom::IncreaseDifficult, 30.0f, true, 0);	
@@ -102,7 +102,7 @@ ACrane* ARoom::SpawnNewCrane()
 
 
 //Search for a free crane. If found - spawn a new item and deliver it
-void ARoom::SearchFreeCrane()
+void ARoom::SearchFreeCraneAndSpawnItem()
 {
 	for (size_t i = 0; i < CraneAmount; i++)
 	{

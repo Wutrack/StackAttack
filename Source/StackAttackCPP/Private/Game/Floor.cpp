@@ -129,22 +129,22 @@ void AFloor::InitFloor(const int &RoomWidthIn, const int &GridSizeIn, const int 
 	PlaneMesh->SetRelativeScale3D(FVector(RoomWidth * 2, RoomWidth * 2, 1));
 	PlaneMesh->SetRelativeLocation(FVector(GridSize / 2 * RoomWidth - GridSize / 2, GridSize / 2 * RoomWidth - GridSize / 2, -GridSize));
 		
-	Walls[0]->SetRelativeScale3D(FVector(RoomWidth, RoomWidth * 2, 1));
+	Walls[0]->SetRelativeScale3D(FVector(RoomWidth, StackHeight + 3, 1));
 	Walls[0]->SetRelativeLocation(FVector(GridSize / 2 * RoomWidth - GridSize / 2, -GridSize / 2,
 		(StackHeight + 3) * GridSize / 2));
 	Walls[0]->SetRelativeRotation(FRotator(0, 0, 90));
 
-	Walls[1]->SetRelativeScale3D(FVector(RoomWidth, RoomWidth * 2, 1));
+	Walls[1]->SetRelativeScale3D(FVector(RoomWidth, StackHeight + 3, 1));
 	Walls[1]->SetRelativeLocation(FVector(GridSize * RoomWidth - GridSize / 2, GridSize / 2 * RoomWidth - GridSize / 2,
 		(StackHeight + 3) * GridSize / 2));
 	Walls[1]->SetRelativeRotation(FRotator(0, 90, 90));
 
-	Walls[2]->SetRelativeScale3D(FVector(RoomWidth, RoomWidth * 2, 1));
+	Walls[2]->SetRelativeScale3D(FVector(RoomWidth, StackHeight + 3, 1));
 	Walls[2]->SetRelativeLocation(FVector(GridSize / 2 * RoomWidth - GridSize / 2, GridSize * RoomWidth - GridSize / 2,
 		(StackHeight + 3) * GridSize / 2));
 	Walls[2]->SetRelativeRotation(FRotator(0, 180, 90));
 
-	Walls[3]->SetRelativeScale3D(FVector(RoomWidth, RoomWidth * 2, 1));
+	Walls[3]->SetRelativeScale3D(FVector(RoomWidth, StackHeight + 3, 1));
 	Walls[3]->SetRelativeLocation(FVector(-GridSize / 2, GridSize / 2 * RoomWidth - GridSize / 2,
 		(StackHeight + 3) * GridSize / 2));
 	Walls[3]->SetRelativeRotation(FRotator(0, 270, 90));

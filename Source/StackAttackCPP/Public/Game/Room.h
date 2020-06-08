@@ -50,7 +50,7 @@ class STACKATTACKCPP_API ARoom : public AActor
 	int32 SpawnVecRand, SpawnVecEdge, SpawnVecZ;
 	 
 	FVector GetSpawnVector();
-	void SearchFreeCrane();
+	void SearchFreeCraneAndSpawnItem();
 
 	//Difficult
 	void IncreaseDifficult();

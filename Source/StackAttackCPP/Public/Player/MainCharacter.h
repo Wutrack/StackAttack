@@ -49,9 +49,11 @@ class STACKATTACKCPP_API AMainCharacter : public ACharacter
 	void PushItem();
 	void TakeItem();
 
-	void KillPlayer();
+	FTimerHandle RotateTHandle;
 
-	//temp Function
+	void KillPlayer();
+	void RotateCameraAfterDeath();
+
 	void ToMainMenu();
 
 public:
@@ -61,6 +63,15 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	UPROPERTY(EditAnywhere)
+		UAudioComponent *SoundComponent;
+	UPROPERTY(EditAnywhere)
+		USoundBase *DeadSound;
+	UPROPERTY(EditAnywhere)
+		USoundBase *HitSound;
+	UPROPERTY(EditAnywhere)
+		USoundBase *HealSound;
 
 public:	
 

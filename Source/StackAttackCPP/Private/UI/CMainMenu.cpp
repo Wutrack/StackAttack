@@ -66,7 +66,7 @@ bool UCMainMenu::Initialize()
     return true;
 }
 
-
+//Info block for error and information
 void UCMainMenu::SetInfoText(FString str)
 {
     InfoText->SetText(FText::FromString(str));
@@ -137,22 +137,13 @@ void UCMainMenu::StartCustomMap()
 {
     if (rWidthInput->Text.ToString() != "") {
 
-        int32 RoomWidth = FCString::Atoi(*rWidthInput->Text.ToString());
-
-        if (RoomWidth > 1 && RoomWidth < 101) {
-
             FString Option = "rW=" + rWidthInput->Text.ToString() + "?load=0";
 
             OpenLevel(SoloLevel, Option, true);
-        }
-        SetInfoText("Room width must be between 2 and 100!");
     }
-}
-
-void UCMainMenu::CheckWhidthInput()
-{
-    FString str = rWidthInput->GetText().ToString();
-
+    else {
+        SetInfoText("Room width cann`t be empty!\nEnter number between 2-50");
+    }
 }
 
 void UCMainMenu::BackToSetMapMenu()
@@ -165,9 +156,4 @@ void UCMainMenu::BackToSetMapMenu()
 void UCMainMenu::OpenLevel(FName level, FString option, bool b)
 {
     UGameplayStatics::OpenLevel(this, level, b, option);
-}
-
-FText UCMainMenu::TextRegExpr(FText text)
-{
-    return FText::FromString("22");
 }

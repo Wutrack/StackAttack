@@ -13,6 +13,9 @@ void AGrid::OnOverlapBegin(UPrimitiveComponent *OverlappedComp, AActor *OtherAct
 		Cast<AItem>(OtherActor))
 	{
 		if (Cast<AItem>(OtherActor)->GetFalling()) {
+
+			PrimaryActorTick.SetTickFunctionEnable(true);
+
 			item = Cast<AItem>(OtherActor);
 			if (marker == nullptr) {
 				SpawnMarker();
@@ -22,7 +25,9 @@ void AGrid::OnOverlapBegin(UPrimitiveComponent *OverlappedComp, AActor *OtherAct
 			}
 		}
 		else {
-			if (marker != nullptr)marker->AddActorLocalOffset(FVector(0, 0, 100));
+			if (marker != nullptr) {
+				marker->AddActorLocalOffset(FVector(0, 0, 100));
+			}
 		}
 		setState();
 		blockCount++;
@@ -76,11 +81,17 @@ bool AGrid::canSpawn()
 
 void AGrid::setState()
 {
-	if (item == nullptr) {
+	if (!IsValid(item)) {
 		if (blockCount == blockCountMax)
 			state = gridState::FULL;
 		else
 			state = gridState::HasSpace;
+
+		if (marker != nullptr) {
+			marker->Destroy();
+			marker = nullptr;
+		}
+		PrimaryActorTick.SetTickFunctionEnable(false);
 	}
 	else
 	{
@@ -105,6 +116,9 @@ void AGrid::setBusy()
 void AGrid::BeginPlay()
 {
 	Super::BeginPlay();
+
+	PrimaryActorTick.SetTickFunctionEnable(false);
+
 }
 
 // Called every frame
@@ -112,20 +126,11 @@ void AGrid::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (item != nullptr && !item->GetFalling()) {
-		if (marker != nullptr) {
-			marker->Destroy();
-			marker = nullptr;
-		}
+	if (item != nullptr && item->GetLanded()) {
 		item = nullptr;
-		TArray<AActor*> items;
-		GetOverlappingActors(items, AItem::StaticClass());
-
-		for (auto i : items) {
-			if (i != nullptr && Cast<AItem>(i)->GetFalling()) {
-				item = Cast<AItem>(i);
-			}
-		}
+		setState();
+	}
+	if (!IsValid(item)) {
 		setState();
 	}
 }

@@ -10,6 +10,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/BoxComponent.h"
 #include "Components/SphereComponent.h"
+#include "Components/AudioComponent.h"
 #include "TimerManager.h"
 #include <cmath>
 
@@ -17,15 +18,18 @@ void AItem::OnOverlapBegin(UPrimitiveComponent *OverlappedComp, AActor *OtherAct
 {
 	if ((OtherActor != nullptr) && (OtherActor != this) && (OtherComp != nullptr))
 	{
-		//If other actor is Item - stop falling and set position
+		//If other actor is an Item - stop falling and set position
 		if (Cast<AItem>(OtherActor) && Cast<AItem>(OtherActor)->GetFalling() == false &&
 			OtherActor->GetActorLocation().Z < this->GetActorLocation().Z) {
 			BottomItem = OtherActor;
-			StopFalling();
-			SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, 
-				OtherActor->GetActorLocation().Z + 100));
+
+			if (bFalling) {
+				StopFalling();
+				SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y,
+					OtherActor->GetActorLocation().Z + 100));
+			}
 		}
-		//If other actor is Player - Hit end destroy
+		//If other actor is a Player - Hit end destroy
 		else if (GetWorld()->GetFirstPlayerController()->GetCharacter() == Cast<AMainCharacter>(OtherActor)) {
 			Cast<AMainCharacter>(OtherActor)->HitPlayer(HitDamage);
 			Destroy();
@@ -55,7 +59,7 @@ void AItem::OnOverlapEnd(UPrimitiveComponent *OverlappedComp, AActor *OtherActor
 AItem::AItem()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
 	BottomItem = nullptr; 
 	Floor = nullptr;
@@ -86,14 +90,37 @@ AItem::AItem()
 	ItemBox->SetRelativeLocation(FVector(0, 0, -3));
 	ItemBox->SetRelativeScale3D(FVector(1.55, 1.55, 1.6));
 	
-	ItemBox->OnComponentBeginOverlap.AddDynamic(this, &AItem::OnOverlapBegin);
-	ItemBox->OnComponentEndOverlap.AddDynamic(this, &AItem::OnOverlapEnd);
 
 	//Ignnore all while in top area to prevent overlap event
 	ItemMesh->SetCollisionProfileName("IgnoreAll");
 	ItemBox->SetCollisionProfileName("IgnoreAll");
 	ItemMesh->SetGenerateOverlapEvents(false);
 	ItemBox->SetGenerateOverlapEvents(false);
+
+	ItemBox->OnComponentBeginOverlap.AddDynamic(this, &AItem::OnOverlapBegin);
+	ItemBox->OnComponentEndOverlap.AddDynamic(this, &AItem::OnOverlapEnd);
+
+	//Define audio component
+	SoundComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("DestroyAudio"));
+	SoundComponent->bAutoActivate = false;
+	SoundComponent->AttachToComponent(ItemMesh, FAttachmentTransformRules::KeepRelativeTransform);
+
+	static ConstructorHelpers::FObjectFinder<USoundBase> 
+		MoveSoundBase(TEXT("/Game/StarterContent/Audio/Steam01.Steam01"));
+	static ConstructorHelpers::FObjectFinder<USoundBase> 
+		DestroySoundBase(TEXT("/Game/StarterContent/Audio/Collapse02.Collapse02"));
+	static ConstructorHelpers::FObjectFinder<USoundBase> 
+		FallSoundBase(TEXT("/Game/Item/Audio/FallSound01.FallSound01"));
+
+	if (MoveSoundBase.Succeeded()) {
+		MoveSound = MoveSoundBase.Object;
+	}
+	if (DestroySoundBase.Succeeded()) {
+		FallSound = FallSoundBase.Object;
+	}
+	if (FallSoundBase.Succeeded()) {
+		DestroySound = DestroySoundBase.Object;
+	}
 }
 
 // Called when the game starts or when spawned
@@ -106,6 +133,7 @@ void AItem::BeginPlay()
 
 	//Set Item`s Material
 	ItemMesh->SetMaterial(0, MaterialArrBP[rand() % MaterialArrBP.Num()]);
+
 }
 
 
@@ -132,7 +160,8 @@ void AItem::OnDetach()
 void AItem::StartFalling()
 {
 	bFalling = true;
-	GetWorld()->GetTimerManager().SetTimer(FallingTHandle, this, &AItem::Falling, 0.01, true, 0.1);
+	bLanded = false;
+	GetWorld()->GetTimerManager().SetTimer(FallingTHandle, this, &AItem::Falling, 0.01, true);
 }
 
 void AItem::Falling()
@@ -157,6 +186,9 @@ void AItem::StopFalling()
 	FallSpeed = FallSpeedStart;
 	//Stop falling timer
 	GetWorld()->GetTimerManager().ClearTimer(FallingTHandle);
+	//Play fall sound
+	SoundComponent->SetSound(FallSound);
+	SoundComponent->Play();
 }
 
 
@@ -207,11 +239,14 @@ void AItem::Push(const FVector vec)
 {
 	if (CanPush(vec)) {
 
+		SoundComponent->SetSound(MoveSound);
+		SoundComponent->Play();
+
 		MoveDestVec = FVector(TraceEnd.X, TraceEnd.Y, GetActorLocation().Z);
 
 		bMoving = true;
 
-		GetWorld()->GetTimerManager().SetTimer(MoveTHandle, this, &AItem::PushItem, 0.01, true, 0);
+		GetWorld()->GetTimerManager().SetTimer(MoveTHandle, this, &AItem::PushItem, 0.01, true);
 	}
 }
 
@@ -226,6 +261,8 @@ void AItem::PushItem()
 
 void AItem::StopPush()
 {
+	SoundComponent->Stop();
+
 	GetWorld()->GetTimerManager().ClearTimer(MoveTHandle);
 	bMoving = false;
 	if (GetActorLocation().Z == 50 && Floor != nullptr) {
@@ -233,6 +270,7 @@ void AItem::StopPush()
 	}
 }
 
+//On Item destroy
 void AItem::DestroyItem()
 {
 	Destroy();
@@ -243,7 +281,7 @@ FSaveItemStruct AItem::SaveItem()
 {
 	FSaveItemStruct save;
 
-	save.NewElement(GetActorLocation(), Type, BoostType, this->GetClass());
+	save.NewElement(GetActorLocation(), Type, BoostType, GetClass());
 	save.SaveBool(bAttached, bFresh, bLanded);
 
 	if (bFalling) {
@@ -266,11 +304,9 @@ AItem* AItem::LoadItem(const FSaveItemStruct &load)
 
 	if (!bAttached && !bFresh) 
 	{
-		ItemBox->SetGenerateOverlapEvents(true);
-		ItemMesh->SetGenerateOverlapEvents(true);
-		ItemBox->SetCollisionProfileName("Item");
-		ItemMesh->SetCollisionProfileName("BlockAll");
+		GetWorld()->GetTimerManager().SetTimer(TestTHandle, this, &AItem::UpdateOverlapAfterLoading, 0.2, false);
 	}
+
 	if (!bLanded) 
 	{
 		if (bFalling) {
@@ -279,7 +315,7 @@ AItem* AItem::LoadItem(const FSaveItemStruct &load)
 		}
 		else if (bMoving) {
 			MoveDestVec = load.MoveDestVec;
-			GetWorld()->GetTimerManager().SetTimer(MoveTHandle, this, &AItem::PushItem, 0.01, true, 0);
+			GetWorld()->GetTimerManager().SetTimer(MoveTHandle, this, &AItem::PushItem, 0.01, true);
 		}
 	}
 
@@ -293,4 +329,10 @@ void AItem::Tick(float DeltaTime)
 
 }
 
-
+void AItem::UpdateOverlapAfterLoading() {
+	ItemBox->SetCollisionProfileName("Item");
+	ItemMesh->SetCollisionProfileName("BlockAll");
+	ItemBox->SetGenerateOverlapEvents(true);
+	ItemMesh->SetGenerateOverlapEvents(true);
+	UpdateOverlaps();
+}

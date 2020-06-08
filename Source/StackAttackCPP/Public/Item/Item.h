@@ -129,6 +129,15 @@ protected:
 	UPROPERTY(EditAnywhere)
 		TArray<UStaticMesh *> MeshArrBP;
 
+	UPROPERTY(EditAnywhere)
+		UAudioComponent* SoundComponent;
+	UPROPERTY(EditAnywhere)
+		USoundBase * MoveSound;
+	UPROPERTY(EditAnywhere)
+		USoundBase * FallSound;
+	UPROPERTY(EditAnywhere)
+		USoundBase *DestroySound;
+
 	EItemType Type;
 	EBoostType BoostType;
 	bool bTake;
@@ -185,6 +194,8 @@ public:
 
 	virtual FSaveItemStruct SaveItem();
 	virtual AItem* LoadItem(const FSaveItemStruct&);
+	FTimerHandle TestTHandle;
+	void UpdateOverlapAfterLoading();
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

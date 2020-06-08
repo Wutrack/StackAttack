@@ -12,6 +12,7 @@
 #include "CPlayerController.h"
 #include "Camera/CameraComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/AudioComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -44,6 +45,29 @@ AMainCharacter::AMainCharacter()
 
 	TraceLenght = 130;
 	ObjTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldStatic));
+
+
+	//Define dead audio component
+	SoundComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("DeadAudio"));
+	SoundComponent->bAutoActivate = false;
+	SoundComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+	
+	static ConstructorHelpers::FObjectFinder<USoundBase>
+		DeadSoundBase(TEXT("/Game/Player/Audio/DeadSound.DeadSound"));
+	static ConstructorHelpers::FObjectFinder<USoundBase>
+		HitSoundBase(TEXT("/Game/Player/Audio/Hit01.Hit01"));
+	static ConstructorHelpers::FObjectFinder<USoundBase>
+		HealSoundBase(TEXT("/Game/Player/Audio/Heal01.Heal01"));
+
+	if (DeadSoundBase.Succeeded()) {
+		DeadSound = DeadSoundBase.Object;
+	}
+	if (DeadSoundBase.Succeeded()) {
+		HitSound = HitSoundBase.Object;
+	}
+	if (DeadSoundBase.Succeeded()) {
+		HealSound = HealSoundBase.Object;
+	}
 }
 
 // Called when the game starts or when spawned
@@ -198,17 +222,24 @@ void AMainCharacter::SetHealth(int inc)
 
 void AMainCharacter::HitPlayer(int damage)
 {
+	SoundComponent->SetSound(HitSound);
+	SoundComponent->Play();
 	SetHealth(-damage);
 }
 
 void AMainCharacter::HealPlayer(int heal)
 {
+	SoundComponent->SetSound(HealSound);
+	SoundComponent->Play();
 	SetHealth(heal);
 }
 
 
 void AMainCharacter::KillPlayer()
 {
+	SoundComponent->SetSound(DeadSound);
+	SoundComponent->Play();
+
 	UCapsuleComponent* capsule = GetCapsuleComponent();
 	capsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	capsule->SetCollisionResponseToAllChannels(ECR_Ignore);
@@ -230,6 +261,13 @@ void AMainCharacter::KillPlayer()
 
 	UGameplayStatics::DeleteGameInSlot("New", 0);
 	Controller->SetInputMode(FInputModeUIOnly());
+
+	GetWorld()->GetTimerManager().SetTimer(RotateTHandle, this, &AMainCharacter::RotateCameraAfterDeath, 0.01, true, 0.1);
+}
+
+void AMainCharacter::RotateCameraAfterDeath()
+{
+	AddControllerYawInput(0.2);
 }
 
 void AMainCharacter::ToMainMenu()
@@ -247,7 +285,7 @@ void AMainCharacter::PushItem()
 
 void AMainCharacter::TakeItem()
 {
-	if (Hit.bBlockingHit && CanJump() && Hit.Actor != nullptr) {
+	if (Hit.bBlockingHit && CanJump() && Hit.GetActor() != nullptr) {
 		AItem *Item = Cast<AItem>(Hit.Actor);
 		if (Item->GetBoostType() == EBoostType::Heal) {
 			HealPlayer(Item->GetBoostPower());

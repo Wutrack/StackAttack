@@ -107,9 +107,6 @@ public:
     void StartCustomMap();
 
     UFUNCTION()
-    void CheckWhidthInput();
-
-    UFUNCTION()
     void BackToSetMapMenu();
 
 protected:
@@ -118,5 +115,4 @@ protected:
     UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
         class UEditableTextBox *rWidthInput;
 
-    FText TextRegExpr(FText);
 };

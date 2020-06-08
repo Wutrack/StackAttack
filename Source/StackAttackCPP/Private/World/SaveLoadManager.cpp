@@ -115,10 +115,6 @@ void ASaveLoadManager::LoadGame(FString SlotName)
 				{
 					AttachedItemArr.Add(Item);
 				}
-				else
-				{
-					Item->UpdateOverlaps();
-				}
 			}
 		}
 
